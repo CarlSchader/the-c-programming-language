@@ -2,10 +2,14 @@
 #include<stdlib.h>
 #include<string.h>
 #include<stdio.h>
+#include<ctype.h>
 
 #define MAXLINES 1024
+#define MAPSIZE 256
 
-char *lineptr[MAXLINES];
+int numeric, reverse, fold, fieldstart, fieldoffset;
+
+char cmpmap[MAPSIZE] = { 0 };
 
 void lower(char *s) {
     int diff = 'A' - 'a';
@@ -16,75 +20,91 @@ void lower(char *s) {
     }
 }
 
-int stringcomp(const void *a, const void* b) {
-    return strcmp(*(const char **)a, *(const char **)b);
-}
-
-int reversestringcomp(const void *a, const void* b) {
-    return strcmp(*(const char **)b, *(const char **)a);
-}
-
-int foldcase(const void *a, const void *b) {
-    const char *x = *(const char **)a;
-    const char *y = *(const char **)b;
-    for (; *x != '\0'; ++x, ++y) {
-        
+void removechars(char *s, char* set) {
+    char *p;
+    for (p = s; *s != '\0'; ++s) {
+        if (!(*(set + (int)*s))) {
+            *p = *s;
+            ++p;
+        }
     }
+    *p = '\0';
+} 
 
-    return strcmp(x, y);
+void reversearray(char *lineptr[], int size) {
+    char *temp;
+    char **endp;
+    for (endp = lineptr + size - 1; endp - lineptr > 0; --endp, ++lineptr) {
+        temp = *lineptr;
+        *lineptr = *endp;
+        *endp = temp;
+    }
 }
 
-int reversefoldcase(const void *a, const void *b) {
-    char *x = *(char **)a;
-    char *y = *(char **)b;
-    lower(x);
-    lower(y);
+int stringcomp(const void *a, const void* b) {
+    char x[MAXLINE], y[MAXLINE];
 
-    return strcmp(y, x);
-}
+    strcpy(x, *(const char **)a + fieldstart), strcpy(y, *(const char **)b + fieldstart);
+    
+    if (fieldoffset > 0)
+        *(y + fieldoffset) = *(x + fieldoffset) = '\0';
+    
+    removechars(x, cmpmap);
+    removechars(y, cmpmap);
 
-int numericcomp(const void *a, const void *b) {
-    return atof(*(const char **)a) - atof(*(const char **)b) < 0.0 ? -1 : 1;
-}
+    if (fold)
+        lower(x), lower(y);
 
-int reversenumericcomp(const void *a, const void *b) {
-    return atof(*(const char **)b) - atof(*(const char **)a) < 0.0 ? -1 : 1;
+    return (numeric ? (atof(*(const char **)a) - atof(*(const char **)b) < 0.0 ? -1 : 1) : strcmp(x, y)) * (reverse ? -1 : 1);
 }
 
 int main(int argc, char *argv[]) {
-    int numeric, reverse, fold;
-    numeric = reverse = fold = 0;
+    char *lineptr[MAXLINES];
+    numeric = reverse = fold = fieldstart = 0;
+    fieldoffset = -1;
 
     for (++argv ;argc > 1; --argc, ++argv) {
-        if (strcmp(*argv, "-n") == 0)
-            numeric = 1;
-        if (strcmp(*argv, "-r") == 0)
-            reverse = 1;
-        if (strcmp(*argv, "-f") == 0)
-            fold = 1;
+        if (**argv == '-') {
+            for (char *c = *argv; *c != '\0'; ++c) {
+                char *val;
+                switch (*c) {
+                    case 'n':
+                        numeric = 1;
+                        break;
+                    case 'r':
+                        reverse = 1;
+                        break;
+                    case 'f':
+                        fold = 1;
+                        break;
+                    case 'd':
+                        for (int i = 0; i < MAPSIZE; ++i) {
+                            if (!(
+                                (i >= 'a' && i <= 'z') ||
+                                (i >= 'A' && i <= 'Z') ||
+                                (i >= '0' && i <= '9') ||
+                                (i == ' ' || i == '\n' || i == '\t')
+                                )) {
+                                    cmpmap[i] = 1;
+                            }
+                        }
+                        break;
+                    case 's':
+                        val = *(argv + 1);
+                        fieldstart = atoi(val);
+                        break;
+                    case 'o':
+                        val = *(argv + 1);
+                        fieldoffset = atoi(val);
+                        break;
+                }
+            }
+        }
     }
 
     int nlines = readlines(lineptr, MAXLINES);
 
-    if (numeric) {
-        if (reverse) {
-            qsort(lineptr, nlines, sizeof(char *), reversenumericcomp);
-        } else {
-            qsort(lineptr, nlines, sizeof(char *), numericcomp);
-        }
-    } else if (fold) {
-        if (reverse) {
-            qsort(lineptr, nlines, sizeof(char *), reversefoldcase);
-        } else {
-            qsort(lineptr, nlines, sizeof(char *), foldcase);
-        }
-    } else {
-        if (reverse) {
-            qsort(lineptr, nlines, sizeof(char *), reversestringcomp);
-        } else {
-            qsort(lineptr, nlines, sizeof(char *), stringcomp);
-        }
-    }
+    qsort(lineptr, nlines, sizeof(char *), stringcomp);
 
     writelines(lineptr, nlines);
 }

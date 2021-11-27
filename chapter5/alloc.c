@@ -1,8 +1,6 @@
 #include"alloc.h"
 #include<stdio.h>
 
-#define ALLOCSIZE 1048576
-
 static char buff[ALLOCSIZE];
 static char *bp = buff;
 
