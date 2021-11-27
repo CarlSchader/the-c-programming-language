@@ -13,3 +13,10 @@ b	bb		bbb			bbbb				b
 12
 13
 1
+A
+B
+C
+Z
+Y
+X
+D
