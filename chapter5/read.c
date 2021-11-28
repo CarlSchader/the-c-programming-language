@@ -3,6 +3,11 @@
 #include<stdio.h>
 #include<string.h>
 
+#define MAXBUFF 1024
+
+static int buff[MAXBUFF];
+static int *bp = buff;
+
 int getLine(char *s, int lim) {
     int c, length, i;
     
@@ -32,4 +37,21 @@ int readlines(char *lineptr[], int nlines) {
 void writelines(char *lineptr[], int nlines) {
     for (; nlines > 0; --nlines, ++lineptr)
         printf("%s\n", *lineptr);
+}
+
+int getch() {
+    return bp - buff > 0 ? *(--bp) : getchar();
+}
+
+void ungetch(int c) {
+    if (bp - buff >= MAXBUFF)
+        printf("error: ungetch buffer full\n");
+    else {
+        *bp = c;
+        ++bp;
+    }
+}
+
+void clearbuff() {
+    bp = buff;
 }

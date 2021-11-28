@@ -6,5 +6,8 @@
 int getLine(char *s, int lim);
 int readlines(char *lineptr[], int nlines);
 void writelines(char *lineptr[], int nlines);
+int getch(void);
+void ungetch(int);
+void clearbuff(void);
 
 #endif
