@@ -26,6 +26,9 @@ extern FILE _iob[OPEN_MAX];
 #define stderr (&_iob[2])
 
 FILE *fopen(const char *, const char *);
+int fclose(FILE *);
+int fflush(FILE *);
+int fseek(FILE *, long, int);
 int _fillbuf(FILE *);
 int _flushbuf(int, FILE *);
 
